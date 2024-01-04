@@ -122,8 +122,9 @@ fn AppRoot(cx: Scope) -> Element {
             MenuState::Credits => rsx! {
                 CreditsMenu {}
             },
-            // Do not render anything when in the game. In a real game, you might add a score card, FPS or any in-game
-            // menus here.
+            // Do not render anything when in the game. In a real game, you might add a score card, FPS counter or any
+            // in-game menus here. There is no way to despawn the entire dioxus UI, so if you ever want it removed in
+            // a specific state you should clear it like this instead.
             MenuState::Game => rsx! { "" },
         }
     }
@@ -268,6 +269,8 @@ fn MenuPanelFooter<'a>(cx: Scope<'a, ChildrenProps<'a>>) -> Element<'a> {
 }
 
 /// A button for menu navigation.
+/// This is simply a wrapper around `Button` with a builtin `onclick` event handler for a `MenuButtonAction`.
+/// Alternatively, you could have it emit a `bevy::Event` to be handled by another system.
 #[allow(non_snake_case)]
 fn MenuButton<'a>(cx: Scope<'a, MenuButtonProps<'a>>) -> Element<'a> {
     let system_scheduler = use_system_scheduler(cx);
