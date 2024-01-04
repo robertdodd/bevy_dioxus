@@ -5,7 +5,7 @@ use bevy::{
     ecs::{
         entity::Entity, query::Without, reflect::AppTypeRegistry, system::Commands, world::World,
     },
-    reflect::TypeInfo,
+    reflect::{TypeInfo, VariantInfo},
     ui::{node_bundles::NodeBundle, Node},
     DefaultPlugins,
 };
@@ -169,13 +169,33 @@ fn ComponentInspector<'a>(cx: Scope, type_info: &'a TypeInfo) -> Element {
                     format!("{}: {}", field.name(), field.type_path())
                 }
             },
-            TypeInfo::TupleStruct(_) => rsx! { "TODO" },
-            TypeInfo::Tuple(_) => rsx! { "TODO" },
-            TypeInfo::List(_) => rsx! { "TODO" },
-            TypeInfo::Array(_) => rsx! { "TODO" },
-            TypeInfo::Map(_) => rsx! { "TODO" },
-            TypeInfo::Enum(_) => rsx! { "TODO" },
-            TypeInfo::Value(_) => rsx! { "TODO" },
+            TypeInfo::TupleStruct(info) => rsx! {
+                info.iter().map(|t| format!("{}: {}", t.index(), t.type_path())).collect::<Vec<String>>().join(", ")
+            },
+            TypeInfo::Tuple(info) => rsx! { info.type_path().to_string() },
+            TypeInfo::List(info) => rsx! { info.type_path().to_string() },
+            TypeInfo::Array(info) => rsx! { info.type_path().to_string() },
+            TypeInfo::Map(info) => rsx! { info.type_path().to_string() },
+            TypeInfo::Enum(info) => {
+                rsx! {
+                    for variant in info.iter() {
+                        match variant {
+                            VariantInfo::Struct(variant_info) => format!(
+                                "{} {{\n{}\n}}",
+                                variant.name(),
+                                variant_info.iter().map(|t| format!("  {}: {},", t.name(), t.type_path())).collect::<Vec<String>>().join("\n")
+                            ),
+                            VariantInfo::Tuple(variant_info) => format!(
+                                "{}({})",
+                                variant.name(),
+                                variant_info.iter().map(|t| t.type_path().to_string()).collect::<Vec<String>>().join(", ")
+                            ),
+                            VariantInfo::Unit(_) => variant.name().to_string(),
+                        }
+                    }
+                }
+            },
+            TypeInfo::Value(info) => rsx! { info.type_path().to_string() },
         }
     }
 }
