@@ -8,7 +8,7 @@ use bevy::{
         entity::Entity, query::Without, reflect::AppTypeRegistry, system::Commands, world::World,
     },
     prelude::ReflectComponent,
-    reflect::{NamedField, ReflectRef, TypeInfo, VariantInfo},
+    reflect::{NamedField, Reflect, ReflectRef, TypeInfo, TypeRegistry, VariantInfo},
     ui::{node_bundles::NodeBundle, Node},
     DefaultPlugins,
 };
@@ -207,6 +207,28 @@ fn ComponentInspector<'a>(cx: Scope, entity: Entity, type_info: &'a TypeInfo) ->
     }
 }
 
+fn get_reflect_value<'a, T: Reflect + Copy>(
+    world: &'a World,
+    type_registry: &'a TypeRegistry,
+    entity: Entity,
+    type_info: &'a TypeInfo,
+    field_name: &'a str,
+) -> &'a T {
+    type_registry
+        .get(type_info.type_id())
+        .and_then(|registration| registration.data::<ReflectComponent>())
+        .and_then(|reflect_component| reflect_component.reflect(world.entity(entity)))
+        .and_then(|data| {
+            if let ReflectRef::Struct(data) = data.reflect_ref() {
+                data.field(field_name)
+                    .and_then(|field| field.downcast_ref::<T>())
+            } else {
+                None
+            }
+        })
+        .unwrap()
+}
+
 #[component]
 fn InspectorFieldBool<'a>(
     cx: Scope,
@@ -217,23 +239,10 @@ fn InspectorFieldBool<'a>(
     let world = use_world(cx);
     let type_registry = use_resource::<AppTypeRegistry>(cx).read();
 
-    let value = type_registry
-        .get(type_info.type_id())
-        .and_then(|registration| registration.data::<ReflectComponent>())
-        .and_then(|reflect_component| reflect_component.reflect(world.entity(*entity)))
-        .and_then(|data| {
-            if let ReflectRef::Struct(data) = data.reflect_ref() {
-                data.field(field_name)
-                    .and_then(|field| field.downcast_ref::<bool>())
-            } else {
-                None
-            }
-        })
-        .copied()
-        .unwrap();
+    let value = get_reflect_value::<bool>(world, &type_registry, *entity, type_info, field_name);
 
     render! {
-        "{field_name}: {value}"
+        text { text: "{field_name}: {value} (bool)", text_color: AMBER_100 }
     }
 }
 
@@ -247,23 +256,10 @@ fn InspectorFieldF32<'a>(
     let world = use_world(cx);
     let type_registry = use_resource::<AppTypeRegistry>(cx).read();
 
-    let value = type_registry
-        .get(type_info.type_id())
-        .and_then(|registration| registration.data::<ReflectComponent>())
-        .and_then(|reflect_component| reflect_component.reflect(world.entity(*entity)))
-        .and_then(|data| {
-            if let ReflectRef::Struct(data) = data.reflect_ref() {
-                data.field(field_name)
-                    .and_then(|field| field.downcast_ref::<f32>())
-            } else {
-                None
-            }
-        })
-        .copied()
-        .unwrap();
+    let value = get_reflect_value::<f32>(world, &type_registry, *entity, type_info, field_name);
 
     render! {
-        "{field_name}: {value}"
+        text { text: "{field_name}: {value} (f32)", text_color: AMBER_100 }
     }
 }
 
