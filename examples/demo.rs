@@ -174,27 +174,6 @@ fn ComponentInspector<'a>(cx: Scope, entity: Entity, type_info: &'a TypeInfo) ->
                         field: field,
                         type_info: type_info,
                     }
-                //     if field.type_id() == TypeId::of::<bool>() {
-                //         rsx! {
-                //             InspectorFieldBool {
-                //                 entity: *entity,
-                //                 field_name: field.name(),
-                //                 type_info: type_info,
-                //             }
-                //         }
-                //     } else if field.type_id() == TypeId::of::<f32>() {
-                //         rsx! {
-                //             InspectorFieldF32 {
-                //                 entity: *entity,
-                //                 field_name: field.name(),
-                //                 type_info: type_info,
-                //             }
-                //         }
-                //     } else {
-                //         rsx! {
-                //             format!("{}: {}", field.name(), field.type_path())
-                //         }
-                //     }
                 }
             },
             TypeInfo::TupleStruct(info) => rsx! {
@@ -252,6 +231,7 @@ fn InspectorFieldBool<'a>(
         })
         .copied()
         .unwrap();
+    println!("value");
 
     render! {
         "{field_name}: {value}"
