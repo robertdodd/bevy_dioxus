@@ -8,7 +8,7 @@ use bevy::{
         entity::Entity, query::Without, reflect::AppTypeRegistry, system::Commands, world::World,
     },
     prelude::ReflectComponent,
-    reflect::{ReflectRef, TypeInfo, VariantInfo},
+    reflect::{NamedField, ReflectRef, TypeInfo, VariantInfo},
     ui::{node_bundles::NodeBundle, Node},
     DefaultPlugins,
 };
@@ -169,27 +169,32 @@ fn ComponentInspector<'a>(cx: Scope, entity: Entity, type_info: &'a TypeInfo) ->
         match type_info {
             TypeInfo::Struct(info) => rsx! {
                 for field in info.iter() {
-                    if field.type_id() == TypeId::of::<bool>() {
-                        rsx! {
-                            InspectorFieldBool {
-                                entity: *entity,
-                                field_name: field.name(),
-                                type_info: type_info,
-                            }
-                        }
-                    } else if field.type_id() == TypeId::of::<f32>() {
-                        rsx! {
-                            InspectorFieldF32 {
-                                entity: *entity,
-                                field_name: field.name(),
-                                type_info: type_info,
-                            }
-                        }
-                    } else {
-                        rsx! {
-                            format!("{}: {}", field.name(), field.type_path())
-                        }
+                    InspectorFieldValue {
+                        entity: *entity,
+                        field: field,
+                        type_info: type_info,
                     }
+                //     if field.type_id() == TypeId::of::<bool>() {
+                //         rsx! {
+                //             InspectorFieldBool {
+                //                 entity: *entity,
+                //                 field_name: field.name(),
+                //                 type_info: type_info,
+                //             }
+                //         }
+                //     } else if field.type_id() == TypeId::of::<f32>() {
+                //         rsx! {
+                //             InspectorFieldF32 {
+                //                 entity: *entity,
+                //                 field_name: field.name(),
+                //                 type_info: type_info,
+                //             }
+                //         }
+                //     } else {
+                //         rsx! {
+                //             format!("{}: {}", field.name(), field.type_path())
+                //         }
+                //     }
                 }
             },
             TypeInfo::TupleStruct(info) => rsx! {
@@ -280,6 +285,38 @@ fn InspectorFieldF32<'a>(
 
     render! {
         "{field_name}: {value}"
+    }
+}
+
+#[component]
+fn InspectorFieldValue<'a>(
+    cx: Scope,
+    entity: Entity,
+    field: &'a NamedField,
+    type_info: &'a TypeInfo,
+) -> Element {
+    render! {
+        if field.type_id() == TypeId::of::<bool>() {
+            rsx! {
+                InspectorFieldBool {
+                    entity: *entity,
+                    field_name: field.name(),
+                    type_info: type_info,
+                }
+            }
+        } else if field.type_id() == TypeId::of::<f32>() {
+            rsx! {
+                InspectorFieldF32 {
+                    entity: *entity,
+                    field_name: field.name(),
+                    type_info: type_info,
+                }
+            }
+        } else {
+            rsx! {
+                "{field.name()}: NOT SUPPORTED ({field.type_path()})"
+            }
+        }
     }
 }
 
