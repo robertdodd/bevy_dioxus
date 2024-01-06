@@ -1,11 +1,15 @@
+use std::any::TypeId;
+
 use bevy::{
     app::{App, Startup},
     core::{DebugName, Name},
     core_pipeline::core_2d::Camera2dBundle,
     ecs::{
-        entity::Entity, query::Without, reflect::AppTypeRegistry, system::Commands, world::World,
+        component::ComponentId, entity::Entity, query::Without, reflect::AppTypeRegistry,
+        system::Commands, world::World,
     },
-    reflect::{TypeInfo, VariantInfo},
+    prelude::ReflectComponent,
+    reflect::{Reflect, ReflectRef, TypeInfo, VariantInfo},
     ui::{node_bundles::NodeBundle, Node},
     DefaultPlugins,
 };
@@ -150,7 +154,7 @@ fn EntityInspector<'a>(
                                 text { text: crate_name, text_size: "14", text_color: NEUTRAL_400 }
                             }
                             if let Some(type_info) = type_info {
-                                rsx! { ComponentInspector { type_info: type_info } }
+                                rsx! { ComponentInspector { entity: selected_entity.read().unwrap(), type_info: type_info } }
                             }
                         }
                     }
@@ -161,12 +165,32 @@ fn EntityInspector<'a>(
 }
 
 #[component]
-fn ComponentInspector<'a>(cx: Scope, type_info: &'a TypeInfo) -> Element {
+fn ComponentInspector<'a>(cx: Scope, entity: Entity, type_info: &'a TypeInfo) -> Element {
     render! {
         match type_info {
             TypeInfo::Struct(info) => rsx! {
                 for field in info.iter() {
-                    format!("{}: {}", field.name(), field.type_path())
+                    if field.type_id() == TypeId::of::<bool>() {
+                        rsx! {
+                            InspectorFieldBool {
+                                entity: *entity,
+                                field_name: field.name(),
+                                type_info: type_info,
+                            }
+                        }
+                    } else if field.type_id() == TypeId::of::<f32>() {
+                        rsx! {
+                            InspectorFieldF32 {
+                                entity: *entity,
+                                field_name: field.name(),
+                                type_info: type_info,
+                            }
+                        }
+                    } else {
+                        rsx! {
+                            format!("{}: {}", field.name(), field.type_path())
+                        }
+                    }
                 }
             },
             TypeInfo::TupleStruct(info) => rsx! {
@@ -197,6 +221,66 @@ fn ComponentInspector<'a>(cx: Scope, type_info: &'a TypeInfo) -> Element {
             },
             TypeInfo::Value(info) => rsx! { info.type_path().to_string() },
         }
+    }
+}
+
+#[component]
+fn InspectorFieldBool<'a>(
+    cx: Scope,
+    entity: Entity,
+    field_name: &'a str,
+    type_info: &'a TypeInfo,
+) -> Element {
+    let world = use_world(cx);
+    let type_registry = use_resource::<AppTypeRegistry>(cx).read();
+
+    let value = type_registry
+        .get(type_info.type_id())
+        .and_then(|registration| registration.data::<ReflectComponent>())
+        .and_then(|reflect_component| reflect_component.reflect(world.entity(*entity)))
+        .and_then(|data| {
+            if let ReflectRef::Struct(data) = data.reflect_ref() {
+                data.field(field_name)
+                    .and_then(|field| field.downcast_ref::<bool>())
+            } else {
+                None
+            }
+        })
+        .copied()
+        .unwrap();
+
+    render! {
+        "{field_name}: {value}"
+    }
+}
+
+#[component]
+fn InspectorFieldF32<'a>(
+    cx: Scope,
+    entity: Entity,
+    field_name: &'a str,
+    type_info: &'a TypeInfo,
+) -> Element {
+    let world = use_world(cx);
+    let type_registry = use_resource::<AppTypeRegistry>(cx).read();
+
+    let value = type_registry
+        .get(type_info.type_id())
+        .and_then(|registration| registration.data::<ReflectComponent>())
+        .and_then(|reflect_component| reflect_component.reflect(world.entity(*entity)))
+        .and_then(|data| {
+            if let ReflectRef::Struct(data) = data.reflect_ref() {
+                data.field(field_name)
+                    .and_then(|field| field.downcast_ref::<f32>())
+            } else {
+                None
+            }
+        })
+        .copied()
+        .unwrap();
+
+    render! {
+        "{field_name}: {value}"
     }
 }
 
