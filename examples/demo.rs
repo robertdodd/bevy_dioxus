@@ -231,7 +231,6 @@ fn InspectorFieldBool<'a>(
         })
         .copied()
         .unwrap();
-    println!("value");
 
     render! {
         "{field_name}: {value}"
