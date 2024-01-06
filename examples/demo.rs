@@ -5,11 +5,10 @@ use bevy::{
     core::{DebugName, Name},
     core_pipeline::core_2d::Camera2dBundle,
     ecs::{
-        component::ComponentId, entity::Entity, query::Without, reflect::AppTypeRegistry,
-        system::Commands, world::World,
+        entity::Entity, query::Without, reflect::AppTypeRegistry, system::Commands, world::World,
     },
     prelude::ReflectComponent,
-    reflect::{Reflect, ReflectRef, TypeInfo, VariantInfo},
+    reflect::{ReflectRef, TypeInfo, VariantInfo},
     ui::{node_bundles::NodeBundle, Node},
     DefaultPlugins,
 };
